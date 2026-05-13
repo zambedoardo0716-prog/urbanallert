@@ -1,0 +1,85 @@
+
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UrbanAlert</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root{--bg:#f2f4f7;--card:rgba(255,255,255,.84);--text:#111827;--muted:#6b7280;--accent:#0a84ff;--danger:#ff453a;--ok:#30d158;--shadow:0 16px 40px rgba(15,23,42,.09)}
+    *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,sans-serif;background:linear-gradient(165deg,#eef4ff,#f7f8fb 45%,#f3f4f6);color:var(--text)}
+    .app{max-width:1180px;margin:0 auto;padding:18px}.hidden{display:none!important}
+    .glass{background:var(--card);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.55);border-radius:22px;box-shadow:var(--shadow)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;margin-bottom:12px}
+    .brand{font-weight:700;letter-spacing:.2px}.muted{color:var(--muted)}
+    input,select,textarea,button{width:100%;padding:12px 14px;border-radius:14px;border:1px solid #dbe1ea;font-size:14px}
+    input,select,textarea{background:#fff} textarea{min-height:84px;resize:vertical}
+    button{border:none;background:linear-gradient(180deg,#309cff,#0a84ff);color:#fff;font-weight:600;cursor:pointer;transition:.2s transform,.2s opacity}
+    button:hover{transform:translateY(-1px)} button.secondary{background:#edf0f5;color:#111827}
+    .login-wrap{max-width:540px;margin:7vh auto;padding:26px}.login-title{font-size:34px;margin:0}.login-sub{margin:6px 0 18px;color:var(--muted)}
+    .row{display:grid;gap:10px}
+    .hero{display:flex;align-items:center;gap:10px;margin-bottom:10px}.hero-badge{font-size:28px}
+    #map{height:58vh;border-radius:18px}.fab{position:fixed;right:18px;bottom:20px;width:58px;height:58px;border-radius:999px;display:flex;align-items:center;justify-content:center;z-index:1200}
+    .dashboard{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+    .stat{padding:12px;border-radius:16px;background:#f7f9fc;cursor:pointer;border:1px solid #e6ecf5}.stat h3{margin:4px 0 0}.card{padding:15px;border-radius:18px}
+    .list{display:grid;gap:9px}.item{background:#fff;border:1px solid #e8edf5;border-radius:14px;padding:10px}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.36);display:flex;align-items:flex-end;z-index:3000}
+    .sheet{background:#fff;width:100%;max-height:82vh;overflow:auto;padding:18px;border-radius:22px 22px 0 0}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#f4f8ff;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:12px;margin-bottom:8px}
+    .msg{position:fixed;top:14px;right:14px;background:#eef9ff;border:1px solid #cce7ff;color:#0b5faa;padding:10px 12px;border-radius:12px;z-index:5000}
+    .msg.error{background:#ffeaea;border-color:#ffc9c9;color:#7f1d1d}
+    @media(max-width:900px){.dashboard{grid-template-columns:repeat(2,1fr)}.login-wrap{margin:3vh auto}.topbar{flex-direction:column;align-items:flex-start;gap:8px}}
+  </style>
+</head>
+<body>
+  <div id="fatal" class="app hidden"><div class="glass card">Errore imprevisto. Ricarica la pagina.</div></div>
+  <div id="root" class="app"></div>
+
+<script>
+window.onerror = () => { document.getElementById('root')?.classList.add('hidden'); document.getElementById('fatal')?.classList.remove('hidden'); };
+window.onunhandledrejection = window.onerror;
+const DB={get:(k,d)=>JSON.parse(localStorage.getItem(k)||JSON.stringify(d)),set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+const state={user:DB.get('ua_user',null),users:DB.get('ua_users',[]),reports:DB.get('ua_reports',[]),confirmations:DB.get('ua_conf',[]),map:null,markers:[],userMarker:null,accuracyCircle:null,watchId:null,boundary:null,view:'all'};
+const CATS=['buca','rifiuti','illuminazione','segnaletica','acqua','verde pubblico','calamità naturale','altro'];
+const EMOJI={buca:'🕳️',rifiuti:'🗑️',illuminazione:'💡',segnaletica:'🚧',acqua:'💧','verde pubblico':'🌳','calamità naturale':'🌪️',altro:'📌'};
+const STATUSES=['In attesa','Presa in carico','In lavorazione','Risolta'];
+function toast(t,k='ok'){const d=document.createElement('div');d.className='msg '+(k==='error'?'error':'');d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2400)}
+function safe(fn){try{return fn()}catch(e){console.error(e);toast('Errore imprevisto','error')}}
+function persist(){DB.set('ua_user',state.user);DB.set('ua_users',state.users);DB.set('ua_reports',state.reports);DB.set('ua_conf',state.confirmations)}
+function esc(s){return String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+
+function loginView(){return `<div class='glass login-wrap'><div class='hero'><span class='hero-badge'>🏙️</span><div><h1 class='login-title'>UrbanAlert</h1><div class='login-sub'>Segnala problemi urbani in modo rapido e preciso.</div></div></div><div class='row'><input id='username' placeholder='Nome utente'><select id='role'><option value='cittadino'>cittadino</option><option value='operatore comunale'>operatore comunale</option></select><input id='city' placeholder='Comune di residenza'><input id='opPass' type='password' class='hidden' placeholder='Password operatore'></div><div style='height:10px'></div><button id='loginBtn'>Accedi / Registrati</button></div>`}
+function dashboardHtml(){const own=state.reports.filter(r=>r.municipality===state.user.city);const c={attesa:own.filter(r=>r.status==='In attesa').length,work:own.filter(r=>r.status==='In lavorazione').length,res:own.filter(r=>r.status==='Risolta').length,crit:own.filter(r=>r.priority===5).length};return `<div class='dashboard'><div class='stat' data-v='attesa'><small>In attesa</small><h3>${c.attesa}</h3></div><div class='stat' data-v='work'><small>In lavorazione</small><h3>${c.work}</h3></div><div class='stat' data-v='res'><small>Risolte</small><h3>${c.res}</h3></div><div class='stat' data-v='crit'><small>Critiche</small><h3>${c.crit}</h3></div><div class='stat' data-v='rank'><small>Classifica 👍</small><h3>#</h3></div></div><div id='dashList' class='glass card'></div>`}
+
+function render(){const root=document.getElementById('root');if(!state.user){root.innerHTML=loginView();document.getElementById('role').onchange=e=>document.getElementById('opPass').classList.toggle('hidden',e.target.value!=='operatore comunale');document.getElementById('loginBtn').onclick=()=>safe(doLogin);return;}
+root.innerHTML=`<div class='glass topbar'><div><div class='brand'>UrbanAlert</div><div class='muted'>${esc(state.user.username)} · ${esc(state.user.role)}</div></div><button id='logoutBtn' class='secondary' style='width:auto'>Logout</button></div>${state.user.role==='operatore comunale'?dashboardHtml():''}<div class='glass card'><div id='map'></div></div><button class='fab' id='recenterBtn'>📍</button><div class='glass card' style='margin-top:10px'><h3>Le mie segnalazioni</h3><div class='list'>${myReports().map(reportHtml).join('')||'Nessuna segnalazione.'}</div></div>`;
+document.getElementById('logoutBtn').onclick=()=>{state.user=null;persist();render()};document.getElementById('recenterBtn').onclick=()=>safe(()=>centerGPS(true));if(state.user.role==='operatore comunale'){bindDashboard();renderDashList()}safe(initMap);bindOpenBtns();}
+
+function doLogin(){const usernameEl=document.getElementById('username');const roleEl=document.getElementById('role');const cityEl=document.getElementById('city');const opPassEl=document.getElementById('opPass');const username=(usernameEl?.value||'').trim();const role=roleEl?.value||'';const city=(cityEl?.value||'').trim();const op=opPassEl?.value||'';if(!username||!city)return toast('Compila tutti i campi','error');if(role==='operatore comunale'&&op!=='Giorgio24')return toast('Password operatore errata','error');state.user={id:crypto.randomUUID(),username,role,city};state.users.push(state.user);persist();render()}
+function myReports(){return state.reports.filter(r=>r.authorId===state.user.id)}
+function reportHtml(r){return `<div class='item'><b>${EMOJI[r.category]||'📌'} ${esc(r.category)}</b> · ${esc(r.status)} · Priorità ${r.priority??'-'}<br><small>${esc(r.municipality)} · ${new Date(r.createdAt).toLocaleString()} · 👍 ${r.confirms} · ${esc(r.author)}</small><div style='margin-top:8px'><button data-open='${r.id}'>Apri</button></div></div>`}
+function bindOpenBtns(){document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openReport(b.dataset.open))}
+
+function bindDashboard(){document.querySelectorAll('.stat').forEach(s=>s.onclick=()=>{state.view=s.dataset.v;renderDashList()})}
+function renderDashList(){const box=document.getElementById('dashList');if(!box)return;let arr=state.reports.filter(r=>r.municipality===state.user.city);if(state.view==='attesa')arr=arr.filter(r=>r.status==='In attesa').sort((a,b)=>b.confirms-a.confirms);if(state.view==='work')arr=arr.filter(r=>r.status==='In lavorazione');if(state.view==='res')arr=arr.filter(r=>r.status==='Risolta');if(state.view==='crit')arr=arr.filter(r=>r.priority===5);if(state.view==='rank')arr=arr.sort((a,b)=>b.confirms-a.confirms);box.innerHTML=`<h3>${state.view==='rank'?'Classifica problemi più confermati':'Segnalazioni'}</h3><div class='list'>${arr.map(reportHtml).join('')||'Nessuna segnalazione.'}</div>`;bindOpenBtns();}
+
+async function initMap(){if(state.watchId!==null){navigator.geolocation.clearWatch(state.watchId);state.watchId=null;}if(state.map)state.map.remove();state.map=L.map('map');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(state.map);await centerGPS(false);startGPSWatch();if(state.user.role==='operatore comunale')await drawBoundary();renderMarkers();setupLongPress();}
+function updateUserLocation(pos,focus){const ll=[pos.coords.latitude,pos.coords.longitude];if(!state.userMarker){state.userMarker=L.circleMarker(ll,{radius:9,color:'#0a84ff',fillColor:'#7ec2ff',fillOpacity:1,weight:3}).addTo(state.map).bindTooltip('Tu sei qui',{direction:'top'});}else{state.userMarker.setLatLng(ll);}if(!state.accuracyCircle){state.accuracyCircle=L.circle(ll,{radius:Math.max(pos.coords.accuracy||0,12),color:'#0a84ff',fillColor:'#7ec2ff',fillOpacity:.15,weight:1}).addTo(state.map);}else{state.accuracyCircle.setLatLng(ll);state.accuracyCircle.setRadius(Math.max(pos.coords.accuracy||0,12));}if(focus)state.map.flyTo(ll,16,{duration:.5});}
+async function centerGPS(force){return new Promise(res=>{if(!navigator.geolocation){state.map.setView([41.9,12.5],6);return res();}navigator.geolocation.getCurrentPosition(pos=>{updateUserLocation(pos,true);if(force)toast('Posizione aggiornata');res()},()=>{state.map.setView([41.9,12.5],6);toast('GPS non disponibile','error');res()},{enableHighAccuracy:true,timeout:9000,maximumAge:15000})})}
+function startGPSWatch(){if(!navigator.geolocation||state.watchId!==null)return;state.watchId=navigator.geolocation.watchPosition(pos=>updateUserLocation(pos,false),()=>{}, {enableHighAccuracy:true,maximumAge:10000,timeout:15000});}
+async function reverseMun(lat,lng){const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);const j=await r.json();return j.address?.city||j.address?.town||j.address?.village||'Sconosciuto'}
+async function drawBoundary(){try{const q=encodeURIComponent(state.user.city);const r=await fetch(`https://nominatim.openstreetmap.org/search?city=${q}&format=json&polygon_geojson=1&limit=1`);const j=await r.json();if(j[0]?.geojson){state.boundary=L.geoJSON(j[0].geojson,{style:{color:'#0a84ff',weight:3,fill:false}}).addTo(state.map)}}catch{toast('Confine comunale non disponibile','error')}}
+function visibleReports(){if(state.user.role==='cittadino')return state.reports.filter(r=>r.status!=='Risolta');return state.reports.filter(r=>r.municipality===state.user.city)}
+function renderMarkers(){state.markers.forEach(m=>m.remove());state.markers=[];visibleReports().forEach(r=>{const icon=L.divIcon({className:'',html:`<div style="font-size:24px;line-height:24px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));">${EMOJI[r.category]||'📌'}</div>`,iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-20]});const m=L.marker([r.lat,r.lng],{icon}).addTo(state.map).bindPopup(`<div class='chip'>${EMOJI[r.category]||'📌'} ${esc(r.category)}</div><br>${esc(r.status)} · 👍 ${r.confirms}<br><button onclick='openReport("${r.id}")'>Apri</button>`);state.markers.push(m)})}
+function setupLongPress(){let t=null,ll=null;const st=e=>{ll=e.latlng;t=setTimeout(()=>openCreate(ll),550)};const clr=()=>{if(t)clearTimeout(t)};state.map.on('mousedown',st);state.map.on('touchstart',st);state.map.on('mouseup',clr);state.map.on('touchend',clr);state.map.on('move',clr)}
+
+async function openCreate(ll){const mun=await reverseMun(ll.lat,ll.lng);const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class='sheet'><div class='chip'>📍 Posizione acquisita automaticamente</div><h3>Nuova segnalazione</h3><select id='cat'>${CATS.map(c=>`<option value='${c}'>${EMOJI[c]} ${c}</option>`).join('')}</select><textarea id='desc' placeholder='Descrizione opzionale'></textarea><input id='pic' type='file' accept='image/*'><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'><button id='send'>Invia segnalazione</button><button id='close' class='secondary'>Chiudi</button></div></div>`;document.body.appendChild(m);m.querySelector('#close').onclick=()=>m.remove();m.querySelector('#send').onclick=async()=>{const f=m.querySelector('#pic').files?.[0];let photo='';if(f)photo=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});state.reports.push({id:crypto.randomUUID(),lat:ll.lat,lng:ll.lng,category:m.querySelector('#cat').value,description:m.querySelector('#desc').value||'',photo,createdAt:new Date().toISOString(),author:state.user.username,authorId:state.user.id,municipality:mun,status:'In attesa',priority:null,confirms:0});persist();m.remove();render();toast('Segnalazione inviata')}}
+
+window.openReport=function(id){safe(()=>{const r=state.reports.find(x=>x.id===id);if(!r)return toast('Segnalazione non trovata','error');const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class='sheet'><div class='chip'>${EMOJI[r.category]||'📌'} ${esc(r.category)}</div><h3>Dettaglio segnalazione</h3><p>${esc(r.description||'Nessuna descrizione')}</p><p><b>Comune:</b> ${esc(r.municipality)}<br><b>Data:</b> ${new Date(r.createdAt).toLocaleString()}<br><b>Stato:</b> ${esc(r.status)}<br><b>Priorità:</b> ${r.priority??'-'}<br><b>Conferme:</b> 👍 ${r.confirms}</p>${r.photo?`<img src='${r.photo}' style='width:100%;border-radius:14px'>`:''}${state.user.role==='cittadino'?`<button id='likeBtn'>👍 Ho notato anche io</button>`:''}${state.user.role==='operatore comunale'?`<select id='st'>${STATUSES.map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select><select id='pr'><option value=''>Priorità</option>${[1,2,3,4,5].map(p=>`<option value='${p}' ${p===r.priority?'selected':''}>${p}</option>`).join('')}</select><button id='saveBtn'>Salva</button>`:''}<button id='closeBtn' class='secondary'>Chiudi</button></div>`;document.body.appendChild(m);m.querySelector('#closeBtn').onclick=()=>m.remove();if(m.querySelector('#likeBtn'))m.querySelector('#likeBtn').onclick=()=>{const key=state.user.id+'_'+r.id;if(state.confirmations.includes(key))return toast('Hai già messo like','error');state.confirmations.push(key);r.confirms++;persist();m.remove();render()};if(m.querySelector('#saveBtn'))m.querySelector('#saveBtn').onclick=()=>{r.status=m.querySelector('#st').value;r.priority=Number(m.querySelector('#pr').value)||null;persist();if(r.status==='Risolta')toast('La tua segnalazione è stata risolta dal comune.');m.remove();render()};})}
+
+render();
+</script>
+</body>
+</html>
