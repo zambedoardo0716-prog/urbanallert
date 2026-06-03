@@ -249,7 +249,7 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   background:#fff;
   border:1px solid var(--line);
   border-radius:18px;
-  padding:14px 48px 14px 14px;
+  padding:14px;
   box-shadow:0 8px 20px rgba(15,35,65,.06);
 }
 .report-card{cursor:pointer;transition:.18s border-color,.18s transform,.18s box-shadow}
