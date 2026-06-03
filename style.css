@@ -252,6 +252,7 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   padding:14px;
   box-shadow:0 8px 20px rgba(15,35,65,.06);
 }
+.item.has-delete{padding-right:48px}
 .report-card{cursor:pointer;transition:.18s border-color,.18s transform,.18s box-shadow}
 .report-card:hover{border-color:rgba(10,132,255,.36);transform:translateY(-1px);box-shadow:0 12px 24px rgba(15,35,65,.09)}
 .report-card:focus{outline:none;border-color:rgba(10,132,255,.62);box-shadow:0 0 0 4px rgba(10,132,255,.12)}
@@ -289,6 +290,22 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   box-shadow:var(--shadow);
 }
 .sheet h3{margin:6px 0 14px;font-size:22px}
+.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.detail-delete-btn{
+  width:36px;
+  height:36px;
+  min-width:0;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:#f8fafc;
+  color:#64748b;
+  border:1px solid var(--line);
+  box-shadow:none;
+  font-size:15px;
+}
+.detail-delete-btn:hover{background:#fff1f1;color:#b42318;box-shadow:none;transform:none}
 .sheet select,.sheet textarea,.sheet input{margin-bottom:10px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:#155da0;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:800;margin-bottom:8px}
 .msg{position:fixed;top:18px;right:18px;background:#eef9ff;border:1px solid #cce7ff;color:#0b5faa;padding:11px 13px;border-radius:14px;z-index:5000;box-shadow:var(--shadow-soft)}
