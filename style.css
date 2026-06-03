@@ -26,7 +26,7 @@ body{
   color:var(--text);
 }
 
-.app{width:min(1180px,100%);margin:0 auto;padding:18px 18px 98px}
+.app{width:min(1180px,100%);margin:0 auto;padding:18px 18px 32px}
 .hidden{display:none!important}
 .glass{
   background:var(--card);
@@ -207,22 +207,24 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   font-size:24px;
   line-height:1;
 }
-.fab{
-  position:fixed;
-  right:22px;
-  bottom:92px;
+.map-create-btn{
+  position:absolute;
+  left:22px;
+  bottom:22px;
+  z-index:750;
   width:auto;
-  min-width:178px;
-  height:58px;
-  padding:0 20px;
+  min-width:0;
+  height:48px;
+  padding:0 16px;
   border-radius:999px;
   display:flex;
   align-items:center;
   justify-content:center;
   gap:8px;
-  z-index:1200;
+  box-shadow:var(--shadow-soft);
+  white-space:nowrap;
 }
-.fab:before{content:"+";font-size:24px;line-height:1}
+.map-create-btn:before{content:"+";font-size:22px;line-height:1}
 
 .dashboard{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
 .stat{
@@ -271,7 +273,7 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
 .msg.error{background:#ffeaea;border-color:#ffc9c9;color:#7f1d1d}
 
 @media(max-width:900px){
-  .app{padding:12px 12px 96px}
+  .app{padding:12px 12px 28px}
   .topbar{top:8px;border-radius:22px}
   .dashboard{grid-template-columns:repeat(2,1fr)}
   .login-wrap{margin:3vh auto}
@@ -280,7 +282,7 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
 }
 
 @media(max-width:560px){
-  .app{padding-left:10px;padding-right:10px;padding-bottom:96px}
+  .app{padding-left:10px;padding-right:10px;padding-bottom:24px}
   .topbar{align-items:flex-start}
   .brand{font-size:19px}
   .login-wrap{padding:20px;border-radius:24px}
@@ -291,7 +293,7 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   .stat h3{font-size:24px}
   #map{height:60vh;min-height:380px;border-radius:18px}
   .map-panel{padding:7px;border-radius:22px}
-  .fab{left:16px;right:16px;bottom:18px;min-width:0;width:auto;height:52px;padding:0 14px}
+  .map-create-btn{left:16px;bottom:16px;height:46px;padding:0 13px;font-size:14px}
   .map-locate-btn{right:16px;bottom:16px;width:46px;height:46px}
   .geo-debug{left:14px;right:14px;bottom:14px}
   .modal{padding:0}
