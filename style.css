@@ -141,8 +141,12 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   gap:6px;
   cursor:pointer;
   color:var(--text);
+  pointer-events:auto;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 .marker-preview:focus{outline:none}
+.marker-preview *{pointer-events:none}
 .marker-preview-title{
   font-weight:800;
   font-size:14px;
