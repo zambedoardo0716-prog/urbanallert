@@ -115,6 +115,19 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
 .app-shell{display:grid;gap:14px}
 .map-panel{position:relative;padding:10px;border-radius:26px;overflow:hidden}
 #map{height:min(68vh,680px);min-height:460px;border-radius:20px;background:#dbeafe}
+.map-panel,
+#map,
+#map .leaflet-container,
+#map .leaflet-pane,
+#map .leaflet-layer,
+#map .leaflet-control,
+#map .leaflet-marker-icon,
+#map .leaflet-marker-shadow{
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
+#map{touch-action:pan-x pan-y pinch-zoom}
 .leaflet-control-zoom{display:none!important}
 .map-error{
   height:100%;
