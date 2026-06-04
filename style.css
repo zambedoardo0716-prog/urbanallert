@@ -335,6 +335,38 @@ button.secondary{background:#eef4f9;color:#0f172a;box-shadow:none;border:1px sol
   font-size:15px;
 }
 .detail-delete-btn:hover{background:#fff1f1;color:#b42318;box-shadow:none;transform:none}
+.status-timeline{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:6px;
+  margin:8px 0 14px;
+}
+.timeline-step{
+  display:grid;
+  justify-items:center;
+  gap:4px;
+  padding:8px 4px;
+  border-radius:14px;
+  background:#f8fafc;
+  color:var(--muted);
+  border:1px solid var(--line);
+}
+.timeline-step.done{
+  background:var(--accent-soft);
+  color:#155da0;
+  border-color:#bfddff;
+}
+.timeline-step span{font-size:18px;line-height:1}
+.timeline-step small{font-size:11px;font-weight:800;text-align:center;line-height:1.15}
+.resolution-card{
+  padding:13px;
+  margin:10px 0;
+  border-radius:18px;
+  background:#f0fbf5;
+  border:1px solid #c9efd8;
+  color:#14532d;
+}
+.resolution-card p{margin:6px 0 0;line-height:1.45}
 .sheet select,.sheet textarea,.sheet input{margin-bottom:10px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:#155da0;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:800;margin-bottom:8px}
 .msg{position:fixed;top:18px;right:18px;background:#eef9ff;border:1px solid #cce7ff;color:#0b5faa;padding:11px 13px;border-radius:14px;z-index:5000;box-shadow:var(--shadow-soft)}
